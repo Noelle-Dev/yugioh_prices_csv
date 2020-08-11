@@ -1,4 +1,4 @@
-use csv::Reader;
+use csv::{ReaderBuilder, Trim};
 use serde::Deserialize;
 use serde::Serialize;
 use std::fs::File;
@@ -18,7 +18,7 @@ pub type Records = Vec<Record>;
 pub type Result = std::result::Result<Records, std::io::Error>;
 
 pub fn get_record_from_reader<R: std::io::Read>(rdr: R) -> Records {
-    let mut rdr = Reader::from_reader(rdr);
+    let mut rdr = ReaderBuilder::new().trim(Trim::All).from_reader(rdr);
     let ret: Records = rdr
         .deserialize()
         .map(|res| res.expect("Malformed Record"))

@@ -45,9 +45,8 @@ CHIM-EN049,I:P Masquerena,2,Ultra Rare,42.09
 
 1. Graceful Error Handling. Currently the app expects that input is perfectly valid and it will terminate with ambiguous error 
    message if either name, tag or rarity is wrong.
-2. Allow leading/trailing white space.
-3. Make tag field optional and add an option to choose tag based on price/rarity (i.e. min/max value).
-4. (Maybe) - Allow using ygopro deck files(*.ydk) as input
+2. Make tag field optional and add an option to choose tag based on price/rarity (i.e. min/max value).
+3. (Maybe) - Allow using ygopro deck files(*.ydk) as input
 
 # Acknowledgements
 1. [YugiohPrices.com](http://yugiohprices.com) - Thanks for developing the awesome website and allowing us to use your API.
