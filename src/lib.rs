@@ -6,11 +6,17 @@ use std::io::BufReader;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Record {
-    pub tag: String,
     pub name: String,
+    pub tag: Option<String>,
     pub count: Option<i32>,
     pub rarity: Option<String>,
     pub price: Option<f32>,
+}
+
+#[derive(Copy, Clone)]
+pub enum ArbitrationStrategy {
+    MinValue,
+    MaxValue,
 }
 
 pub type Records = Vec<Record>;
@@ -34,7 +40,7 @@ pub fn get_record(file_path: &str) -> Result {
 
 pub mod api {
     pub mod get_card_prices {
-        use super::super::Record;
+        use super::super::{ArbitrationStrategy, Record};
         use reqwest::Client;
         use serde::Deserialize;
         use url::Url;
@@ -55,7 +61,7 @@ pub mod api {
         #[derive(Debug, Deserialize)]
         pub struct PriceResponse {
             status: String,
-            data: PriceData,
+            data: Option<PriceData>,
         }
 
         #[derive(Debug, Deserialize)]
@@ -129,23 +135,49 @@ pub mod api {
         /// let record = price_record(record, &client).await;
         /// assert!(record.price.is_some());
         /// ```
-        pub async fn price_record(record: Record, client: &Client) -> Record {
+        pub async fn price_record(
+            record: Record,
+            client: &Client,
+            arb_strategy: ArbitrationStrategy,
+        ) -> Record {
             let resp = call(record.name.as_str(), client).await;
-            let card_prices = resp
-                .data
-                .into_iter()
-                .find(|x| {
-                    let matching_tag = x.print_tag == record.tag;
-                    match &record.rarity {
-                        None => matching_tag,
-                        Some(rarity) => matching_tag && x.rarity == *rarity,
-                    }
-                })
-                .unwrap();
 
-            Record {
-                price: Some(card_prices.price_data.data.prices.average),
-                ..record
+            let matches = resp.data.into_iter().filter(|card_prices| {
+                let matching_tag = match record.tag.as_ref() {
+                    Some(tag) => *tag == card_prices.print_tag,
+                    None => true,
+                };
+                let matching_rarity = match record.rarity.as_ref() {
+                    Some(rarity) => *rarity == card_prices.rarity,
+                    None => true,
+                };
+
+                card_prices.price_data.data.is_some() && matching_tag && matching_rarity
+            });
+
+            let key = |card_prices: &CardPrices| {
+                card_prices
+                    .price_data
+                    .data
+                    .as_ref()
+                    .map_or(0f32, |x| x.prices.average)
+            };
+
+            let cmp = |a: &CardPrices, b: &CardPrices| key(a).partial_cmp(&key(b)).unwrap();
+
+            let best_match = match arb_strategy {
+                ArbitrationStrategy::MinValue => matches.min_by(cmp),
+                ArbitrationStrategy::MaxValue => matches.max_by(cmp),
+            };
+
+            match best_match {
+                None => record,
+                Some(card_prices) => Record {
+                    price: Some(card_prices.price_data.data.unwrap().prices.average),
+                    tag: Some(card_prices.print_tag),
+                    rarity: Some(card_prices.rarity),
+                    ..record
+                },
             }
         }
     }

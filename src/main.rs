@@ -6,15 +6,50 @@ use futures::StreamExt;
 use lib::api::get_card_prices::price_record;
 use lib::{get_record, get_record_from_reader, Records};
 use reqwest::Client;
+use std::str::FromStr;
+use url::ParseError;
+
+#[derive(Clap, Debug)]
+enum ArbitrationStrategy {
+    MinValue,
+    MaxValue,
+}
+
+impl FromStr for ArbitrationStrategy {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Min" | "MinValue" => Ok(ArbitrationStrategy::MinValue),
+            "Max" | "MaxValue" => Ok(ArbitrationStrategy::MaxValue),
+            _ => Ok(ArbitrationStrategy::MinValue),
+        }
+    }
+}
+
+impl Into<lib::ArbitrationStrategy> for ArbitrationStrategy {
+    fn into(self) -> lib::ArbitrationStrategy {
+        match self {
+            ArbitrationStrategy::MinValue => lib::ArbitrationStrategy::MinValue,
+            ArbitrationStrategy::MaxValue => lib::ArbitrationStrategy::MaxValue,
+        }
+    }
+}
 
 #[derive(Clap, Debug)]
 struct Opts {
-    #[clap(short)]
+    #[clap(short, about = "Path to input file, otherwise input comes from stdin")]
     file: Option<String>,
-    #[clap(short)]
+    #[clap(short, about = "Path to output file, otherwise output goes to stdout")]
     out: Option<String>,
-    #[clap(long)]
+    #[clap(long, about = "Prints total value of cards to stdout")]
     print_total: bool,
+    #[clap(
+        short,
+        default_value = "Min",
+        about = r#"Arbitration strategy when result is ambiguous. 'Min' or 'MinValue' to pick cheapest option. 'Max' or 'MaxValue' to pick most expensive option."#
+    )]
+    arbitration_strategy: ArbitrationStrategy,
 }
 
 #[tokio::main]
@@ -27,8 +62,9 @@ async fn main() {
         Some(filename) => get_record(filename.as_str()).unwrap(),
     };
 
+    let arb_strategy = opts.arbitration_strategy.into();
     let records: Records = iter(records)
-        .then(|x| price_record(x, &client))
+        .then(|x| price_record(x, &client, arb_strategy))
         .collect()
         .await;
 
