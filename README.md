@@ -31,25 +31,70 @@ Optional fields:
 4. price - Price of card, the value is not used for input. This just means that you can use the output as future input (i.e. when 
    price changes the next day)
 
-Example Input CSV:
+# Examples
+**With complete input (name, tag, rarity)**
+```
+yugioh_prices_csv -f examples/example.csv
+```
+
+Input CSV:
 ```
 tag,name,count,rarity
 CHIM-EN049,I:P Masquerena,1,Starlight Rare
 CHIM-EN049,I:P Masquerena,2,Ultra Rare
 ```
 
-Example Output CSV:
+Output CSV:
 ```
 tag,name,count,rarity,price
 CHIM-EN049,I:P Masquerena,1,Starlight Rare,681.3
 CHIM-EN049,I:P Masquerena,2,Ultra Rare,42.09
 ```
 
+**With incomplete input and minimum value arbitration (`-a Min` is optional)**
+```
+yugioh_prices_csv -f examples/example_min_arb.csv -a Min
+```
+
+Input CSV:
+```
+tag,name,count,rarity,price
+CHIM-EN049,I:P Masquerena,1,Starlight Rare,681.3
+CHIM-EN049,I:P Masquerena,2,Ultra Rare,42.09
+```
+
+Output CSV:
+```
+name,tag,count,rarity,price
+I:P Masquerena,CHIM-EN049,,Ultra Rare,33.92
+Blue-Eyes White Dragon,SDBE-EN001,,Ultra Rare,1.35
+```
+
+**With incomplete input and maximum value arbitration**
+```
+yugioh_prices_csv -f examples/example_max_arb.csv -a Max
+```
+
+Input CSV:
+```
+name
+I:P Masquerena
+Blue-Eyes White Dragon
+```
+
+Output CSV:
+```
+name,tag,count,rarity,price
+I:P Masquerena,CHIM-EN049,,Starlight Rare,570.19
+Blue-Eyes White Dragon,GLD5-EN001,,Ghost/Gold Rare,740.24
+```
+
 # TODOs
 
 1. Graceful Error Handling. Currently the app expects that input is perfectly valid and it will terminate with ambiguous error 
    message if either name, tag or rarity is wrong.
-2. (Maybe) - Allow using ygopro deck files(*.ydk) as input. This might be difficult.
+2. More arbitration strategies.
+3. (Maybe) - Allow using ygopro deck files(*.ydk) as input. This might be difficult.
 
 # Acknowledgements
 1. [YugiohPrices.com](http://yugiohprices.com) - Thanks for developing the awesome website and allowing us to use your API.
