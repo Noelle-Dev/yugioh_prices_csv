@@ -33,9 +33,9 @@ Optional fields:
 
 Example Input CSV:
 ```
-tag,name,count,rarity,
-CHIM-EN049,I:P Masquerena,1,Starlight Rare,
-CHIM-EN049,I:P Masquerena,2,Ultra Rare,
+tag,name,count,rarity
+CHIM-EN049,I:P Masquerena,1,Starlight Rare
+CHIM-EN049,I:P Masquerena,2,Ultra Rare
 ```
 
 Example Output CSV:

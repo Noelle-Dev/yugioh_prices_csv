@@ -1,6 +1,8 @@
-use csv::{ReaderBuilder, Trim};
+use csv::{ReaderBuilder, StringRecord, Trim};
+use serde::export::Formatter;
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 
@@ -19,23 +21,93 @@ pub enum ArbitrationStrategy {
     MaxValue,
 }
 
+const HEADERS: [&str; 5] = ["name", "tag", "count", "rarity", "price"];
+const REQUIRED_HEADERS: [&str; 1] = ["name"];
+
+#[derive(Debug)]
+pub enum Error {
+    MissingHeaders,
+    IllegalHeader(String),
+    MissingHeader(&'static str),
+    DuplicateHeader(&'static str),
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::MissingHeaders => write!(f, "Missing Headers!"),
+            Error::IllegalHeader(hdr) => write!(f, "Illegal Header: '{}'", hdr),
+            Error::MissingHeader(hdr) => write!(f, "Missing Required Header: '{}'", hdr),
+            Error::DuplicateHeader(hdr) => write!(f, "Duplicate Header: '{}'", hdr),
+        }?;
+        Ok(())
+    }
+}
+
+impl std::error::Error for Error {}
+
 pub type Records = Vec<Record>;
 
-pub type Result = std::result::Result<Records, std::io::Error>;
+pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-pub fn get_record_from_reader<R: std::io::Read>(rdr: R) -> Records {
+fn sanitize_header<R: std::io::Read>(reader: &mut csv::Reader<R>) -> Result<StringRecord> {
+    let headers = reader.headers().or(Err(Error::MissingHeaders))?;
+    let headers_map: HashMap<&str, usize> = HEADERS
+        .iter()
+        .map(|header_str| {
+            (
+                header_str.clone(),
+                headers.iter().filter(|x| x == header_str).count(),
+            )
+        })
+        .collect();
+
+    let header_count = headers_map.iter().fold(0usize, |acc, tup| acc + *tup.1);
+
+    if header_count == 0 {
+        return Err(Box::new(Error::MissingHeaders));
+    }
+
+    let missing_header = REQUIRED_HEADERS
+        .iter()
+        .find(|x| *headers_map.get(*x).unwrap() == 0);
+
+    if missing_header.is_some() {
+        let hdr = missing_header.unwrap().clone();
+        return Err(Box::new(Error::MissingHeader(hdr)));
+    }
+
+    let duplicate_header = headers_map.iter().find(|(_, count)| **count > 1);
+
+    if duplicate_header.is_some() {
+        let hdr = duplicate_header.unwrap().0.clone();
+        return Err(Box::new(Error::DuplicateHeader(hdr)));
+    }
+
+    let illegal_header = headers.iter().find(|hdr| !HEADERS.contains(hdr));
+
+    if illegal_header.is_some() {
+        let hdr = illegal_header.unwrap().to_owned();
+        return Err(Box::new(Error::IllegalHeader(hdr)));
+    }
+
+    Ok(headers.clone())
+}
+
+pub fn get_records_from_reader<R: std::io::Read>(rdr: R) -> Result<Records> {
     let mut rdr = ReaderBuilder::new().trim(Trim::All).from_reader(rdr);
+    let _headers = sanitize_header(&mut rdr)?;
     let ret: Records = rdr
         .deserialize()
         .map(|res| res.expect("Malformed Record"))
         .collect();
-    ret
+    Ok(ret)
 }
 
-pub fn get_record(file_path: &str) -> Result {
+pub fn get_records(file_path: &str) -> Result<Records> {
     let file = File::open(file_path)?;
     let buf_reader = BufReader::new(file);
-    Ok(get_record_from_reader(buf_reader))
+    get_records_from_reader(buf_reader)
 }
 
 pub mod api {

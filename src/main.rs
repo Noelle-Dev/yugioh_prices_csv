@@ -4,7 +4,7 @@ use clap::Clap;
 use futures::stream::iter;
 use futures::StreamExt;
 use lib::api::get_card_prices::price_record;
-use lib::{get_record, get_record_from_reader, Records};
+use lib::{get_records, get_records_from_reader, Records};
 use reqwest::Client;
 use std::str::FromStr;
 use url::ParseError;
@@ -58,10 +58,16 @@ async fn main() {
 
     let client = Client::default();
     let records = match opts.file {
-        None => get_record_from_reader(std::io::stdin()),
-        Some(filename) => get_record(filename.as_str()).unwrap(),
+        None => get_records_from_reader(std::io::stdin()),
+        Some(filename) => get_records(filename.as_str()),
     };
 
+    if records.is_err() {
+        eprint!("{}", records.unwrap_err());
+        return;
+    }
+
+    let records = records.unwrap();
     let arb_strategy = opts.arbitration_strategy.into();
     let records: Records = iter(records)
         .then(|x| price_record(x, &client, arb_strategy))
