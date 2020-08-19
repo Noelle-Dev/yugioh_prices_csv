@@ -7,6 +7,15 @@ card database.
 1. Tracking value of opened booster boxes/cases
 2. Tracking value of your deck
 
+# Installation
+You will have to compile from source. To do so you will need to have the rust toolchain. Once you have installed rust on your system: 
+
+1. git clone https://github.com/tuzymandias/yugioh_prices_csv.git
+2. cd yugioh_prices_csv
+3. cargo build --release
+
+If you want to install it, in step 3. replace `build` to `install`. Developed and tested with rust version `1.44.1`.
+
 # Command Line Arguments
 1. `-f <path/to/file>` - (Optional) path to input file. If not present, it defaults to STDIN.
     1. if file has a `.ydk` suffix, it is treated as a YDK file, otherwise it is treated as CSV
