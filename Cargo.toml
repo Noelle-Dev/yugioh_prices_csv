@@ -13,4 +13,5 @@ reqwest = { version = "0.10.3", features = ["json"] }
 url = { version = "2.1.1" }
 tokio = { version = "0.2", features = ["full"] }
 futures = { version = "0.3.5" }
-clap = "3.0.0-beta.1"
+clap = { version = "3.0.0-beta.1" }
+percent-encoding = { version = "2.1.0" }

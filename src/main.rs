@@ -1,11 +1,15 @@
+pub mod api;
 pub mod lib;
 
+use crate::api::card_info::convert_ydk_records;
+use api::get_card_prices::price_record;
 use clap::Clap;
 use futures::stream::iter;
 use futures::StreamExt;
-use lib::api::get_card_prices::price_record;
-use lib::{get_records, get_records_from_reader, Records};
+use lib::{get_records, get_records_from_reader, get_ydk_records, Records};
 use reqwest::Client;
+use std::ffi::OsStr;
+use std::path::Path;
 use std::str::FromStr;
 use url::ParseError;
 
@@ -36,6 +40,10 @@ impl Into<lib::ArbitrationStrategy> for ArbitrationStrategy {
     }
 }
 
+fn get_extension(filename: &str) -> Option<&str> {
+    Path::new(filename).extension().and_then(OsStr::to_str)
+}
+
 #[derive(Clap, Debug)]
 struct Opts {
     #[clap(short, about = "Path to input file, otherwise input comes from stdin")]
@@ -59,7 +67,17 @@ async fn main() {
     let client = Client::default();
     let records = match opts.file {
         None => get_records_from_reader(std::io::stdin()),
-        Some(filename) => get_records(filename.as_str()),
+        Some(filename) => {
+            if get_extension(filename.as_str()) == Some("ydk") {
+                let ydk_records = get_ydk_records(filename.as_str());
+                match ydk_records {
+                    Ok(ydk_records) => Ok(convert_ydk_records(ydk_records, &client).await),
+                    Err(err) => Err(err),
+                }
+            } else {
+                get_records(filename.as_str())
+            }
+        }
     };
 
     if records.is_err() {

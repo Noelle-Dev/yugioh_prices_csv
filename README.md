@@ -1,6 +1,7 @@
 # Yugioh Prices CSV
-Simple command line tool to price your Yu-Gi-Oh cards. Input and output is in the form of CSV file. 
-Prices are retrieved from [YugiohPrices](http://yugiohprices.com).
+Simple command line tool to price your Yu-Gi-Oh cards. Input can either be a YDK or CSV file, output will always be in CSV format. 
+Prices are retrieved from [YugiohPrices](http://yugiohprices.com). When input is a YDK file, card names are fetched from [YGOPRODeck](https://www.google.com/search?client=firefox-b-d&q=ygoprodeck+api)
+card database.
 
 # Use-Case
 1. Tracking value of opened booster boxes/cases
@@ -8,6 +9,7 @@ Prices are retrieved from [YugiohPrices](http://yugiohprices.com).
 
 # Command Line Arguments
 1. `-f <path/to/file>` - (Optional) path to input file. If not present, it defaults to STDIN.
+    1. if file has a `.ydk` suffix, it is treated as a YDK file, otherwise it is treated as CSV
 2. `-o <path/to/file>` - (Optional) path to output file. If not present, it defaults to STDOUT.
 3. `-a ArbitrationStrategy` - (Optional) Arbitration strategy to use when input is ambiguous. Values are:
     1. Min/MinValue - Uses the option with the lowest price, this is the default.
@@ -15,7 +17,7 @@ Prices are retrieved from [YugiohPrices](http://yugiohprices.com).
 4. `--print-total` - (Optional) flag to print the card's total value to STDOUT.
 
 # Input/Output Data Format
-CSV is the input/output data format. Headers are mandatory.
+CSV is the main input/output data format. CSV headers are mandatory.
 
 Required fields:
 
@@ -30,6 +32,8 @@ Optional fields:
 3. count - The amount of the card, defaults to 1. This value is used in calculation of total value
 4. price - Price of card, the value is not used for input. This just means that you can use the output as future input (i.e. when 
    price changes the next day)
+   
+Input can also be in YDK file format. Example input can be found in `examples/time_thief.ydk` and the output in `examples/time_thief_out.csv`.
 
 # Examples
 **With complete input (name, tag, rarity)**
@@ -94,7 +98,7 @@ Blue-Eyes White Dragon,GLD5-EN001,,Ghost/Gold Rare,740.24
 1. Graceful Error Handling. Currently the app expects that input is perfectly valid and it will terminate with ambiguous error 
    message if either name, tag or rarity is wrong.
 2. More arbitration strategies.
-3. (Maybe) - Allow using ygopro deck files(*.ydk) as input. This might be difficult.
 
 # Acknowledgements
 1. [YugiohPrices.com](http://yugiohprices.com) - Thanks for developing the awesome website and allowing us to use your API.
+2. [YGOPRODeck](https://ygoprodeck.com/) - Thanks for the card database API
