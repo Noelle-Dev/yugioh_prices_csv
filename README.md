@@ -24,6 +24,7 @@ If you want to install it, in step 3. replace `build` to `install`. Developed an
     1. Min/MinValue - Uses the option with the lowest price, this is the default.
     2. Max/MaxValue - Uses the option with the highest price.
 4. `--print-total` - (Optional) flag to print the card's total value to STDOUT.
+5. `-c <currency>` - (Optional) desired currency to be used, defaults to USD. Symbols can be found [here](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html).
 
 # Input/Output Data Format
 CSV is the main input/output data format. CSV headers are mandatory.
@@ -111,3 +112,4 @@ Blue-Eyes White Dragon,GLD5-EN001,,Ghost/Gold Rare,740.24
 # Acknowledgements
 1. [YugiohPrices.com](http://yugiohprices.com) - Thanks for developing the awesome website and allowing us to use your API.
 2. [YGOPRODeck](https://ygoprodeck.com/) - Thanks for the card database API
+3. [Exchange Rates API](https://exchangeratesapi.io/) - Thanks for providing an easily accessible exchange rate API

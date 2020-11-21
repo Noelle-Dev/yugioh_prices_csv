@@ -2,6 +2,7 @@ pub mod api;
 pub mod lib;
 
 use crate::api::card_info::convert_ydk_records;
+use api::currency_conversion::get_exchange_rate;
 use api::get_card_prices::price_record;
 use clap::Clap;
 use futures::stream::iter;
@@ -58,6 +59,11 @@ struct Opts {
         about = r#"Arbitration strategy when result is ambiguous. 'Min' or 'MinValue' to pick cheapest option. 'Max' or 'MaxValue' to pick most expensive option."#
     )]
     arbitration_strategy: ArbitrationStrategy,
+    #[clap(
+        short,
+        about = "Currency to use for prices (defaults to USD). List of symbols can be found here: https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html"
+    )]
+    currency: Option<String>,
 }
 
 #[tokio::main]
@@ -87,7 +93,7 @@ async fn main() {
 
     let records = records.unwrap();
     let arb_strategy = opts.arbitration_strategy.into();
-    let records: Records = iter(records)
+    let mut records: Records = iter(records)
         .then(|x| price_record(x, &client, arb_strategy))
         .collect()
         .await;
@@ -107,7 +113,16 @@ async fn main() {
 
     let mut writer = csv::Writer::from_writer(buf_writer);
 
-    for record in records.iter() {
+    let exchange_rate = match opts.currency {
+        None => 1.0,
+        Some(currency) => get_exchange_rate(currency.as_str(), &client).await,
+    };
+
+    for record in records.iter_mut() {
+        if record.price.is_some() {
+            let price = record.price.as_mut().unwrap();
+            *price = *price * exchange_rate
+        }
         writer.serialize(record).unwrap();
     }
 
